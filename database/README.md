@@ -1,0 +1,7 @@
+# Borali Supabase
+Projeto dedicado: qbhoglehjamqvbyzkdiy, organização escolhida pela usuária. Criação cotada em US$0/mês. Região sa-east-1.
+Migration remota: borali_private_sync. Tabelas borali_profiles e borali_sessions, ambas com RLS por auth.uid() + e-mail autorizado escolhido. Auth usuários reais ainda dependem de cadastro/confirmar e-mail pela usuária.
+Campos: perfil {user_id UUID FK auth.users, payload JSONB, revision int, updated_at timestamp}; sessão {id text PK, user_id UUID FK, payload JSONB contendo mesmo id, revision int, updated_at timestamp}. Índice (user_id,updated_at).
+RPCs borali_save_session(doc,expected_revision) e borali_save_profile(doc,expected_revision) SECURITY INVOKER, search_path vazio. Expected 0 insere; demais atualizam somente revisão coincidente e incrementam. Revisão antiga lança 40001. Anon sem grants, autenticado com SELECT/INSERT/UPDATE, policies USING+WITH CHECK exigem UID e e-mail autorizado. Sem service_role no frontend.
+Verificações: ambos RLS true; advisory de segurança sem lints; transação com usuário sintético e rollback testou insert/update/revisão antiga, bloqueio de e-mail diferente e bloqueio de leitura anon. Nenhum usuário sintético foi preservado. Leitura/gravação com a conta real requer primeiro login e não foi declarada como concluída.
+Para deploy novo, reproduzir a migração registrada e configurar URLs do Auth com a URL de produção. Testar a confirmação de e-mail, porque o serviço possui política própria de remetentes/destinatários e limites. Não desabilitar confirmação de e-mail como atalho.
