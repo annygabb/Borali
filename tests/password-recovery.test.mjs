@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {recoveryRedirect,passwordProblem,sendRecovery,changePassword} from '../dist/password-recovery.mjs';
+test('recovery returns to same origin',()=>assert.equal(recoveryRedirect('https://borali-one.vercel.app'),'https://borali-one.vercel.app/?recovery=1'));
+test('password confirmation required',()=>{assert.ok(passwordProblem('1234567','1234567'));assert.ok(passwordProblem('12345678','different'));assert.equal(passwordProblem('12345678','12345678'),'');});
+test('request errors propagated',async()=>{await assert.rejects(sendRecovery({auth:{resetPasswordForEmail:async()=>({error:new Error('rate limit')})}},'test@example.invalid','https://borali-one.vercel.app'),/rate limit/);});
+test('expired session never changes password',async()=>{let changed=false;await assert.rejects(changePassword({auth:{getSession:async()=>({data:{session:null}}),updateUser:async()=>{changed=true;}}},'12345678','12345678'),/expirado/);assert.equal(changed,false);});
+test('valid session changes password without deleting data',async()=>{let received;await changePassword({auth:{getSession:async()=>({data:{session:{}}}),updateUser:async value=>{received=value;return {};}}},'12345678','12345678');assert.deepEqual(received,{password:'12345678'});});
